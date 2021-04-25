@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import retrofit2.Response;
 
 import java.io.IOException;
 import java.util.List;
@@ -54,6 +55,22 @@ public class JsonTest200 {
         return Stream.of(myPet1, myPet2, myPet3).map(Arguments::of);
     }
 
+    private Response<Pet> getRespGet(final Pet myPet) throws IOException {
+        return petStore.getPetById(myPet.getId()).execute();
+    }
+
+    private Response<Pet> getRespPost(final Pet myPet) throws IOException {
+        return petStore.createPet(myPet).execute();
+    }
+
+    private Response<Pet> getRespPut(final Pet myPet) throws IOException {
+        return petStore.putPet(myPet).execute();
+    }
+
+    private Response<Answer> getRespDel(final Pet myPet) throws IOException {
+        return petStore.delPetById(myPet.getId()).execute();
+    }
+
     @BeforeAll
     public static void beforeAll() {
         petStore = new PetStoreService().getPetstore();
@@ -62,18 +79,20 @@ public class JsonTest200 {
     @ParameterizedTest
     @MethodSource("param")
     public final void testPOST200(final Pet myPet) throws IOException {
-        Assertions.assertEquals(200, petStore.createPet(myPet).execute().code());
-        Assertions.assertEquals(myPet, petStore.createPet(myPet).execute().body());
-        petStore.delPetById(myPet.getId());
+        Response<Pet> respPost = getRespPost(myPet);
+        Assertions.assertEquals(200, respPost.code());
+        Assertions.assertEquals(myPet, respPost.body());
+        getRespDel(myPet);
     }
 
     @ParameterizedTest
     @MethodSource("param")
     public final void testGET200(final Pet myPet) throws IOException {
-        petStore.createPet(myPet).execute();
-        Assertions.assertEquals(200, petStore.getPetById(myPet.getId()).execute().code());
-        Assertions.assertEquals(myPet, petStore.getPetById(myPet.getId()).execute().body());
-        petStore.delPetById(myPet.getId()).execute();
+        getRespPost(myPet);
+        Response<Pet> respGet = getRespGet(myPet);
+        Assertions.assertEquals(200, respGet.code());
+        Assertions.assertEquals(myPet, respGet.body());
+        getRespDel(myPet);
     }
 
     @ParameterizedTest
@@ -84,25 +103,25 @@ public class JsonTest200 {
         notAPet.setType("unknown");
         notAPet.setMessage(Integer.toString(myPet.getId()));
 
-        petStore.createPet(myPet).execute();
-        Assertions.assertEquals(200, petStore.delPetById(myPet.getId()).execute().code());
-        petStore.createPet(myPet).execute();
-        Assertions.assertEquals(notAPet, petStore.delPetById(myPet.getId()).execute().body());
-        Assertions.assertEquals(404, petStore.getPetById(myPet.getId()).execute().code());
-        petStore.delPetById(myPet.getId()).execute();
-        petStore.delPetById(myPet.getId()).execute();
+        getRespPost(myPet);
+        Response<Answer> respDel = getRespDel(myPet);
+        Assertions.assertEquals(200, respDel.code());
+        Assertions.assertEquals(notAPet, respDel.body());
+        Assertions.assertEquals(404, getRespGet(myPet).code());
+        getRespDel(myPet);
     }
 
     @ParameterizedTest
     @MethodSource("param")
     public final void testPUT200(final Pet myPet) throws IOException, NullPointerException {
-        Pet puffPet = petStore.createPet(myPet).execute().body();
+        Pet puffPet = getRespPost(myPet).body();
         puffPet.setStatus("STOLEN");
-        Assertions.assertEquals(200, petStore.putPet(puffPet).execute().code());
-        Assertions.assertEquals(puffPet, petStore.getPetById(puffPet.getId()).execute().body());
-        Assertions.assertNotEquals(myPet.getStatus(), petStore.getPetById(puffPet.getId()).
-                execute().body().getStatus());
-        petStore.delPetById(puffPet.getId()).execute();
+        Response<Pet> respPut = getRespPut(puffPet);
+        Response<Pet> respGet = getRespGet(puffPet);
+        Assertions.assertEquals(200, respPut.code());
+        Assertions.assertEquals(puffPet, respGet.body());
+        Assertions.assertNotEquals(myPet.getStatus(), respGet.body().getStatus());
+        getRespDel(puffPet);
     }
 }
 

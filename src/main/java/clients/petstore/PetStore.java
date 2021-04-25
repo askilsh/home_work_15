@@ -21,7 +21,7 @@ public interface PetStore {
     Call<Answer> getPetById404(@Path("id") int id);
 
     @PUT("/v2/pet/")
-    Call<Answer> putPet404(@Body Pet pet);
+    Call<Pet> putPet404(@Body Pet pet);
 
 }
 

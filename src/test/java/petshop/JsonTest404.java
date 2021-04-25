@@ -7,6 +7,7 @@ import models.pet.Pet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import retrofit2.Response;
 
 import java.io.IOException;
 
@@ -14,9 +15,29 @@ public class JsonTest404 {
     private static PetStore petStore;
     private static Answer notAPet;
     private static Pet myPet;
+    private static Response<Answer> respGet;
+    private static Response<Pet> respPut;
+    private static Response<Answer> respDel;
+    private static Response<Pet> respPost;
+
+    private static void setRespGet() throws IOException {
+        respGet = petStore.getPetById404(myPet.getId()).execute();
+    }
+
+    private static void setRespPut() throws IOException {
+        respPut = petStore.putPet404(myPet).execute();
+    }
+
+    private static void setRespDel() throws IOException {
+        respDel = petStore.delPetById(myPet.getId()).execute();
+    }
+
+    private static void setRespPost() throws IOException {
+        respPost = petStore.createPet(myPet).execute();
+    }
 
     @BeforeAll
-    public static void beforeAll() {
+    public static void beforeAll() throws IOException {
         petStore = new PetStoreService().getPetstore();
         notAPet = new Answer().getAnswer();
         notAPet.setCode(1);
@@ -25,28 +46,31 @@ public class JsonTest404 {
 
         myPet = new Pet();
         myPet.setId(168);
+
+        setRespDel();
+        setRespGet();
+        setRespPut();
+        setRespDel();
     }
 
     @Test
     public void testGET404() throws IOException {
-        petStore.delPetById(myPet.getId()).execute();
-        Assertions.assertEquals(404, petStore.getPetById404(myPet.getId()).execute().code());
-        Assertions.assertEquals(notAPet, petStore.getPetById404(myPet.getId()).execute().body());
+        setRespDel();
+        Assertions.assertEquals(404, respGet.code());
+        Assertions.assertNotNull(respGet.errorBody());
     }
 
     @Test
     public void testDELETE404() throws IOException {
-        petStore.createPet(myPet).execute();
-        petStore.delPetById(myPet.getId()).execute();
-        Assertions.assertEquals(404, petStore.delPetById(myPet.getId()).execute().code());
-        Assertions.assertNull(petStore.delPetById(myPet.getId()).execute().body());
+        setRespDel();
+        Assertions.assertEquals(404, respDel.code());
+        Assertions.assertNull(respDel.body());
     }
 
     @Test
     public void testPUT404() throws IOException, NullPointerException {
-        petStore.delPetById(myPet.getId()).execute();
-        Assertions.assertEquals(404, petStore.putPet(myPet).execute().code());
-        Assertions.assertNotEquals(myPet, petStore.putPet(myPet).execute().body());
-        Assertions.assertEquals(notAPet, petStore.putPet(myPet).execute().body());
+        setRespDel();
+        Assertions.assertEquals(404, respPut.code());
+        Assertions.assertNotNull(respPut.errorBody());
     }
 }
